@@ -137,3 +137,35 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+
+# Gradle files
+.gradle/
+build/
+*/build/
+
+# Local configuration file (SDK path, etc.)
+local.properties
+
+# Log files
+*.log
+
+# Android Studio / IntelliJ project files
+.idea/
+*.iml
+
+# Keystore files (security-sensitive)
+*.jks
+*.keystore
+
+# Generated files
+captures/
+output.json
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Cache
+.cxx/
+
