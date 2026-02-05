@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- Expressive Palette (Navbar Specific) -->
+    <color name="nav_pill_background">#FFF0F5</color> <!-- Lavender Blush / Light Pink -->
+    <color name="nav_selected_pill">#880E4F</color> <!-- Maroon / Dark Pink -->
+    <color name="nav_selected_icon">#FFFFFF</color> <!-- White -->
+    <color name="nav_unselected_icon">#4A148C</color> <!-- Dark Purple/Black for unselected -->
+
+    <color name="pastel_purple_bg">#F3E5F5</color>
+    <color name="surface_card">#FFFFFF</color>
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="my_light_primary">#6200EE</color>
+</resources>

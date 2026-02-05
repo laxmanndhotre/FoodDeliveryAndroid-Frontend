@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">FoodGram Delivery</string>
+    <string name="delivery_person_login">Delivery Person Login</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="login">Login</string>
+    <string name="foodgram_delivery_registration">Foodgram Delivery Registration</string>
+    <string name="full_name">Full Name</string>
+    <string name="phone">Phone</string>
+    <string name="role_e_g_delivery_person">Role (e.g. delivery_person)</string>
+    <string name="register">Register</string>
+    <string name="already_have_an_account_login">Already have an account? Login</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>
