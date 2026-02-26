@@ -16,6 +16,12 @@ import com.laxman.foodgramdelivery.utils.TokenManager;
 public class HomeActivity extends AppCompatActivity {
 
     private ViewPager2 viewPager;
+    private androidx.cardview.widget.CardView floatingNavContainer;
+    private com.google.android.material.bottomnavigation.BottomNavigationView bottomNav;
+    private android.widget.ImageView ivCollapsedIcon;
+    private boolean isCollapsed = false;
+    private boolean isAnimating = false;
+    private int expandedWidth = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,6 +35,12 @@ public class HomeActivity extends AppCompatActivity {
             return insets;
         });
         viewPager = findViewById(R.id.viewPager);
+        floatingNavContainer = findViewById(R.id.floatingNavContainer);
+        bottomNav = findViewById(R.id.bottomNavigation);
+        ivCollapsedIcon = findViewById(R.id.ivCollapsedIcon);
+        ivCollapsedIcon.setOnClickListener(v -> expandBottomNav());
+
+        floatingNavContainer.post(() -> expandedWidth = floatingNavContainer.getWidth());
 
         // Adapter for fragments
         viewPager.setAdapter(new ScreenSlidePagerAdapter(this));
@@ -170,8 +182,7 @@ public class HomeActivity extends AppCompatActivity {
         });
 
         // Initialize BottomNavigationView
-        com.google.android.material.bottomnavigation.BottomNavigationView bottomNav = findViewById(
-                R.id.bottomNavigation);
+        // bottomNav already initialized above
 
         // Sync ViewPager2 swipe with BottomNav selection
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
@@ -208,4 +219,131 @@ public class HomeActivity extends AppCompatActivity {
         });
     }
 
+    public void collapseBottomNav() {
+        if (isCollapsed || isAnimating)
+            return;
+
+        // Capture width if not set (just in case)
+        if (expandedWidth == 0)
+            expandedWidth = floatingNavContainer.getWidth();
+
+        isAnimating = true;
+
+        // Target width: same as height (circle) or fixed 56dp
+        int currentHeight = floatingNavContainer.getHeight();
+        if (currentHeight == 0)
+            currentHeight = (int) (56 * getResources().getDisplayMetrics().density);
+
+        // Lock height to prevent shrinking when bottomNav is GONE
+        android.view.ViewGroup.LayoutParams params = floatingNavContainer.getLayoutParams();
+        params.height = currentHeight;
+        floatingNavContainer.setLayoutParams(params);
+
+        // Update icon based on selection
+        int selectedId = bottomNav.getSelectedItemId();
+        if (selectedId == R.id.nav_orders) {
+            ivCollapsedIcon.setImageResource(R.drawable.ic_orders);
+        } else if (selectedId == R.id.nav_analytics) {
+            ivCollapsedIcon.setImageResource(R.drawable.ic_analytics);
+        } else if (selectedId == R.id.nav_profile) {
+            ivCollapsedIcon.setImageResource(R.drawable.ic_person);
+        }
+
+        // 1. Animate Width
+        android.animation.ValueAnimator widthAnim = android.animation.ValueAnimator.ofInt(expandedWidth, currentHeight);
+        widthAnim.setDuration(300);
+        widthAnim.setInterpolator(new androidx.interpolator.view.animation.FastOutSlowInInterpolator());
+        widthAnim.addUpdateListener(animation -> {
+            android.view.ViewGroup.LayoutParams p = floatingNavContainer.getLayoutParams();
+            p.width = (int) animation.getAnimatedValue();
+            floatingNavContainer.setLayoutParams(p);
+        });
+
+        // 2. Animate Alpha (Crossfade)
+        // Fade out BottomNav
+        android.animation.ObjectAnimator navAlpha = android.animation.ObjectAnimator.ofFloat(bottomNav, "alpha", 1f,
+                0f);
+        navAlpha.setDuration(200);
+
+        // Fade in Icon (delayed slightly)
+        ivCollapsedIcon.setVisibility(android.view.View.VISIBLE);
+        android.animation.ObjectAnimator iconAlpha = android.animation.ObjectAnimator.ofFloat(ivCollapsedIcon, "alpha",
+                0f, 1f);
+        iconAlpha.setStartDelay(100);
+        iconAlpha.setDuration(200);
+
+        android.animation.AnimatorSet set = new android.animation.AnimatorSet();
+        set.playTogether(widthAnim, navAlpha, iconAlpha);
+        set.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(android.animation.Animator animation) {
+                isCollapsed = true;
+                isAnimating = false;
+                bottomNav.setVisibility(android.view.View.GONE);
+            }
+        });
+        set.start();
+    }
+
+    public void expandBottomNav() {
+        if (!isCollapsed || isAnimating)
+            return;
+
+        isAnimating = true;
+
+        // 1. Animate Width
+        int currentWidth = floatingNavContainer.getWidth();
+        // Use recorded expandedWidth
+
+        android.animation.ValueAnimator widthAnim = android.animation.ValueAnimator.ofInt(currentWidth, expandedWidth);
+        widthAnim.setDuration(300);
+        widthAnim.setInterpolator(new androidx.interpolator.view.animation.FastOutSlowInInterpolator());
+        widthAnim.addUpdateListener(animation -> {
+            android.view.ViewGroup.LayoutParams params = floatingNavContainer.getLayoutParams();
+            params.width = (int) animation.getAnimatedValue();
+            floatingNavContainer.setLayoutParams(params);
+        });
+
+        // 2. Animate Alpha
+        bottomNav.setAlpha(0f);
+        bottomNav.setVisibility(android.view.View.VISIBLE);
+
+        android.animation.ObjectAnimator navAlpha = android.animation.ObjectAnimator.ofFloat(bottomNav, "alpha", 0f,
+                1f);
+        navAlpha.setStartDelay(100);
+        navAlpha.setDuration(200);
+
+        android.animation.ObjectAnimator iconAlpha = android.animation.ObjectAnimator.ofFloat(ivCollapsedIcon, "alpha",
+                1f, 0f);
+        iconAlpha.setDuration(200);
+
+        android.animation.AnimatorSet set = new android.animation.AnimatorSet();
+        set.playTogether(widthAnim, navAlpha, iconAlpha);
+        set.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(android.animation.Animator animation) {
+                isCollapsed = false;
+                isAnimating = false;
+                ivCollapsedIcon.setVisibility(android.view.View.GONE);
+
+                // Reset height to wrap_content to handle any potential layout changes
+                android.view.ViewGroup.LayoutParams params = floatingNavContainer.getLayoutParams();
+                params.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+                floatingNavContainer.setLayoutParams(params);
+            }
+        });
+        set.start();
+    }
+
+    @Override
+    public void onConfigurationChanged(@androidx.annotation.NonNull android.content.res.Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        // Reset width on rotation to avoid stuck state
+        if (floatingNavContainer != null) {
+            floatingNavContainer.post(() -> {
+                if (!isCollapsed)
+                    expandedWidth = floatingNavContainer.getWidth();
+            });
+        }
+    }
 }

@@ -40,7 +40,8 @@ public class RetrofitClient {
                     })
                     .addInterceptor(logging)
                     .build();
-            String baseUrl="https://foodgram-spring-backend-for-delivery-person-production.up.railway.app/api/";
+
+            String baseUrl="https://foodgram-spring-backend-for-delivery-person-production-8629.up.railway.app/api/";
             retrofit = new Retrofit.Builder()
                     .baseUrl(baseUrl)
                     .client(client)

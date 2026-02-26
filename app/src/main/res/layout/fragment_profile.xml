@@ -6,12 +6,15 @@
     android:layout_height="match_parent">
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/nsvProfile"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="?attr/colorSurface"
         android:fillViewport="true"
         android:requiresFadingEdge="vertical"
-        android:fadingEdgeLength="100dp">
+        android:fadingEdgeLength="100dp"
+        android:paddingBottom="150dp"
+        android:clipToPadding="false">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -240,9 +243,7 @@
             </LinearLayout>
 
             <!-- Spacer for floating navbar -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="100dp" />
+
 
         </LinearLayout>
 

@@ -32,24 +32,57 @@ public class OrdersAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
     private static final int VIEW_TYPE_ITEM = 0;
     private static final int VIEW_TYPE_FOOTER = 1;
+    private static final int VIEW_TYPE_HEADER = 2;
 
-    private static List<Delivery> deliveries;
+    private java.util.List<Object> items = new java.util.ArrayList<>();
+    private java.util.List<Delivery> originalDeliveries; // Keep track for updates if needed, though we rebuild items
 
     public OrdersAdapter(List<Delivery> deliveries) {
-        this.deliveries = deliveries;
-        Log.d("OrdersAdapter", "Adapter initialized with " + deliveries.size() + " deliveries");
+        updateDeliveries(deliveries);
     }
 
     public void updateDeliveries(List<Delivery> newDeliveries) {
-        this.deliveries = newDeliveries;
-        Log.d("OrdersAdapter", "Deliveries updated, new size = " + newDeliveries.size());
+        this.originalDeliveries = new java.util.ArrayList<>(newDeliveries);
+        this.items.clear();
+
+        List<Delivery> active = new java.util.ArrayList<>();
+        List<Delivery> past = new java.util.ArrayList<>();
+
+        for (Delivery d : newDeliveries) {
+            String status = d.getOrder().getOrderStatus();
+            if ("DELIVERED".equalsIgnoreCase(status) || "CANCELLED".equalsIgnoreCase(status)) {
+                past.add(d);
+            } else {
+                active.add(d);
+            }
+        }
+
+        if (!active.isEmpty()) {
+            items.add("Active Orders");
+            items.addAll(active);
+        }
+
+        if (!past.isEmpty()) {
+            items.add("Past Orders");
+            items.addAll(past);
+        }
+
+        // If both empty, maybe show nothing or let the specific empty view in fragment
+        // handle it
+
+        Log.d("OrdersAdapter",
+                "Updated items: " + items.size() + " (Active: " + active.size() + ", Past: " + past.size() + ")");
         notifyDataSetChanged();
     }
 
     @Override
     public int getItemViewType(int position) {
-        if (position == deliveries.size()) {
+        if (position == items.size()) {
             return VIEW_TYPE_FOOTER;
+        }
+        Object item = items.get(position);
+        if (item instanceof String) {
+            return VIEW_TYPE_HEADER;
         }
         return VIEW_TYPE_ITEM;
     }
@@ -63,6 +96,17 @@ public class OrdersAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     (int) (100 * parent.getContext().getResources().getDisplayMetrics().density)));
             return new FooterViewHolder(view);
+        } else if (viewType == VIEW_TYPE_HEADER) {
+            TextView textView = new TextView(parent.getContext());
+            textView.setLayoutParams(new ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT));
+            int padding = (int) (16 * parent.getContext().getResources().getDisplayMetrics().density);
+            textView.setPadding(padding, padding, padding, padding / 2);
+            textView.setTextSize(18); // sp
+            textView.setTypeface(null, android.graphics.Typeface.BOLD);
+            textView.setTextColor(parent.getContext().getResources().getColor(android.R.color.black));
+            return new HeaderViewHolder(textView);
         }
 
         Log.d("OrdersAdapter", "Creating new ViewHolder");
@@ -76,17 +120,18 @@ public class OrdersAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         if (holder instanceof FooterViewHolder) {
             return;
         }
+        if (holder instanceof HeaderViewHolder) {
+            String title = (String) items.get(position);
+            ((HeaderViewHolder) holder).textView.setText(title);
+            return;
+        }
 
         OrderViewHolder orderViewHolder = (OrderViewHolder) holder;
 
-        Delivery delivery = deliveries.get(position);
+        Delivery delivery = (Delivery) items.get(position);
         Order order = delivery.getOrder();
 
-        Log.d("OrdersAdapter", "Binding deliveryId=" + delivery.getDeliveryId() +
-                " orderId=" + order.getOrderId() +
-                " status=" + order.getOrderStatus() +
-                " restaurant=" + order.getRestaurantName() +
-                " customer=" + order.getCustomerName());
+        Log.d("OrdersAdapter", "Binding position=" + position + " orderId=" + order.getOrderId());
 
         orderViewHolder.textOrderId.setText("Order #" + order.getOrderId());
         orderViewHolder.chipStatus.setText(order.getOrderStatus());
@@ -99,21 +144,46 @@ public class OrdersAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                 && !"CANCELLED".equalsIgnoreCase(order.getOrderStatus());
         orderViewHolder.buttonCancelOrder.setVisibility(isActionable ? View.VISIBLE : View.GONE);
 
+        // Pass the CURRENT delivery object to the click listener
+        // We need to be careful with closure here if delivery object changes, but since
+        // rebind happens, it's fine.
         orderViewHolder.buttonCancelOrder.setOnClickListener(v -> {
-            orderViewHolder.showCancelConfirmation(v, delivery);
+            orderViewHolder.showCancelConfirmation(v, delivery, () -> {
+                originalDeliveries.remove(delivery);
+                updateDeliveries(originalDeliveries);
+                Toast.makeText(v.getContext(), "Order Unassigned", Toast.LENGTH_SHORT).show();
+            });
+        });
+
+        // Fix long click listener to get correct item
+        orderViewHolder.itemView.setOnLongClickListener(v -> {
+            // We use the delivery bound to this view holder
+            orderViewHolder.showOrderOptionsDialog(v, delivery, () -> {
+                originalDeliveries.remove(delivery);
+                updateDeliveries(originalDeliveries);
+                Toast.makeText(v.getContext(), "Order Unassigned", Toast.LENGTH_SHORT).show();
+            });
+            return true;
         });
     }
 
     @Override
     public int getItemCount() {
-        int count = deliveries != null ? deliveries.size() + 1 : 1; // +1 for footer
-        Log.d("OrdersAdapter", "ItemCount=" + count);
-        return count;
+        return items.size() + 1; // +1 for footer
     }
 
     static class FooterViewHolder extends RecyclerView.ViewHolder {
         public FooterViewHolder(@NonNull View itemView) {
             super(itemView);
+        }
+    }
+
+    static class HeaderViewHolder extends RecyclerView.ViewHolder {
+        TextView textView;
+
+        public HeaderViewHolder(@NonNull View itemView) {
+            super(itemView);
+            textView = (TextView) itemView;
         }
     }
 
@@ -131,19 +201,9 @@ public class OrdersAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             textAmount = itemView.findViewById(R.id.textAmount);
             buttonCancelOrder = itemView.findViewById(R.id.buttonCancelOrder);
             com.laxman.foodgramdelivery.utils.BounceTouchListener.attach(buttonCancelOrder);
-
-            // Long press listener
-            itemView.setOnLongClickListener(v -> {
-                int position = getBindingAdapterPosition();
-                if (position != RecyclerView.NO_POSITION && position < deliveries.size()) {
-                    Delivery delivery = deliveries.get(position);
-                    showOrderOptionsDialog(v, delivery);
-                }
-                return true; // consume the event
-            });
         }
 
-        void showOrderOptionsDialog(View v, Delivery delivery) {
+        void showOrderOptionsDialog(View v, Delivery delivery, Runnable onSuccess) {
             new com.google.android.material.dialog.MaterialAlertDialogBuilder(v.getContext())
                     .setTitle("Update Order #" + delivery.getOrder().getOrderId())
                     .setItems(new CharSequence[] { "Mark as Delivered", "Cancel Order" }, (dialog, which) -> {
@@ -152,7 +212,7 @@ public class OrdersAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                                 updateOrderStatus(delivery, v);
                                 break;
                             case 1:
-                                updateOrderStatus(delivery, v);
+                                cancelOrder(delivery, v, onSuccess);
                                 break;
                         }
                     })
@@ -192,18 +252,18 @@ public class OrdersAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             });
         }
 
-        void showCancelConfirmation(View v, Delivery delivery) {
+        void showCancelConfirmation(View v, Delivery delivery, Runnable onSuccess) {
             new com.google.android.material.dialog.MaterialAlertDialogBuilder(v.getContext())
                     .setTitle("Cancel Order?")
                     .setMessage("Are you sure you want to cancel this order?")
                     .setPositiveButton("Yes, Cancel", (dialog, which) -> {
-                        cancelOrder(delivery, v);
+                        cancelOrder(delivery, v, onSuccess);
                     })
                     .setNegativeButton("No", null)
                     .show();
         }
 
-        private void cancelOrder(Delivery delivery, View v) {
+        private void cancelOrder(Delivery delivery, View v, Runnable onSuccess) {
             int orderId = delivery.getOrder().getOrderId();
             OrderApi api = RetrofitClient.getInstance(v.getContext()).create(OrderApi.class);
 
@@ -211,10 +271,9 @@ public class OrdersAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                 @Override
                 public void onResponse(Call<Void> call, Response<Void> response) {
                     if (response.isSuccessful()) {
-                        delivery.getOrder().setOrderStatus("CANCELLED");
-                        chipStatus.setText("CANCELLED");
-                        buttonCancelOrder.setVisibility(View.GONE);
-                        Toast.makeText(v.getContext(), "Order Cancelled", Toast.LENGTH_SHORT).show();
+                        if (onSuccess != null) {
+                            onSuccess.run();
+                        }
                     } else {
                         Toast.makeText(v.getContext(), "Failed to cancel: " + response.message(), Toast.LENGTH_SHORT)
                                 .show();

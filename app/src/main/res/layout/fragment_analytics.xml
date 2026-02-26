@@ -8,6 +8,7 @@
     tools:context=".fragments.AnalyticsFragment">
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/nsvAnalytics"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="?attr/colorSurface"

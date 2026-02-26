@@ -64,5 +64,15 @@
             app:labelVisibilityMode="labeled"
             app:itemIconSize="24dp"/>
 
+        <ImageView
+            android:id="@+id/ivCollapsedIcon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_orders"
+            app:tint="?attr/colorPrimary"
+            android:visibility="gone"
+            android:alpha="0" />
+
     </androidx.cardview.widget.CardView>
 </RelativeLayout>

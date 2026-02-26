@@ -6,8 +6,9 @@
         <item name="colorPrimary">@color/my_light_primary</item>
 
         <!-- Disable Android 12+ default splash -->
-        <item name="android:windowSplashScreenBackground">@null</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@null</item>
+        <!-- Disable Android 12+ default splash -->
+        <item name="android:windowSplashScreenBackground">@color/white</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/delp_foreground</item>
         <item name="android:windowSplashScreenBrandingImage">@null</item>
     </style>
 

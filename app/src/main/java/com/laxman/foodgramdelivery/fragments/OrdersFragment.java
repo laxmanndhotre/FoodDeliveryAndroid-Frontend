@@ -27,6 +27,8 @@ import com.laxman.foodgramdelivery.network.OrderApi;
 import com.laxman.foodgramdelivery.network.RetrofitClient;
 import com.laxman.foodgramdelivery.utils.TokenManager;
 import com.google.android.material.button.MaterialButtonToggleGroup;
+import com.laxman.foodgramdelivery.network.DeliveryApi;
+import com.laxman.foodgramdelivery.models.DeliveryPersonProfileDto;
 
 import java.util.Collections;
 import java.util.List;
@@ -106,6 +108,24 @@ public class OrdersFragment extends Fragment {
         // Initial Fetch
         fetchOrders();
 
+        // Attach Scroll Listeners for Collapsing Navbar
+        RecyclerView.OnScrollListener scrollListener = new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                if (getActivity() instanceof com.laxman.foodgramdelivery.HomeActivity) {
+                    com.laxman.foodgramdelivery.HomeActivity activity = (com.laxman.foodgramdelivery.HomeActivity) getActivity();
+                    if (dy > 20) {
+                        activity.collapseBottomNav();
+                    } else if (dy < -20) {
+                        activity.expandBottomNav();
+                    }
+                }
+            }
+        };
+        recyclerAvailableOrders.addOnScrollListener(scrollListener);
+        recyclerMyOrders.addOnScrollListener(scrollListener);
+
         return view;
     }
 
@@ -156,12 +176,19 @@ public class OrdersFragment extends Fragment {
             // Fetch My Assigned Orders
             Long dpId = TokenManager.getDeliveryPersonId(getContext());
             if (dpId == null) {
-                swipeRefreshLayout.setRefreshing(false);
-                Toast.makeText(getContext(), "Error: Delivery Person ID not found", Toast.LENGTH_SHORT).show();
+                Long userId = TokenManager.getUserId(getContext());
+                if (userId != null) {
+                    attemptRecovery(userId);
+                } else {
+                    swipeRefreshLayout.setRefreshing(false);
+                    Toast.makeText(getContext(), "User details not found. Please login again.", Toast.LENGTH_SHORT)
+                            .show();
+                }
                 return;
             }
 
             api.getOrdersForDeliveryPerson(dpId.intValue()).enqueue(new Callback<List<Delivery>>() {
+
                 @Override
                 public void onResponse(Call<List<Delivery>> call, Response<List<Delivery>> response) {
                     new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
@@ -190,6 +217,7 @@ public class OrdersFragment extends Fragment {
                     squigglyProgressView.setVisibility(View.GONE);
                     Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                 }
+
             });
         }
     }
@@ -221,6 +249,44 @@ public class OrdersFragment extends Fragment {
             @Override
             public void onFailure(Call<Delivery> call, Throwable t) {
                 Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void attemptRecovery(Long userId) {
+        if (getContext() == null)
+            return;
+
+        DeliveryApi deliveryApi = RetrofitClient.getInstance(getContext()).create(DeliveryApi.class);
+        // Use 0L as dummy deliveryPersonId to fetch by userId
+        deliveryApi.getProfile(0L, userId).enqueue(new Callback<DeliveryPersonProfileDto>() {
+            @Override
+            public void onResponse(Call<DeliveryPersonProfileDto> call, Response<DeliveryPersonProfileDto> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Long recoveredId = response.body().getDeliveryPersonId();
+                    TokenManager.saveUserDetails(getContext(), userId, recoveredId);
+
+                    // Retry fetching orders
+                    fetchOrders();
+                } else {
+                    swipeRefreshLayout.setRefreshing(false);
+                    squigglyProgressView.setVisibility(View.GONE);
+                    Toast.makeText(getContext(), "Please complete your profile in the Profile tab.", Toast.LENGTH_LONG)
+                            .show();
+                    // Optional: Redirect to Profile tab
+                    if (toggleOrderType != null) {
+                        // We can't switch tabs easily from here without reference to BottomNav or
+                        // Parent Activity
+                        // But the user can do it manually.
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<DeliveryPersonProfileDto> call, Throwable t) {
+                swipeRefreshLayout.setRefreshing(false);
+                squigglyProgressView.setVisibility(View.GONE);
+                Toast.makeText(getContext(), "Failed to recover profile: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

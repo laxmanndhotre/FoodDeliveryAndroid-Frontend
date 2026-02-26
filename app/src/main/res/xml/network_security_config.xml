@@ -3,7 +3,7 @@
 
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">10.0.2.2</domain>
-        <domain includeSubdomains="true">https://foodgram-spring-backend-for-delivery-person-production.up.railway.app/api/</domain>
+        <domain includeSubdomains="true">https://foodgram-spring-backend-for-delivery-person-production-8629.up.railway.app/api/</domain>
     </domain-config>
 
 </network-security-config>

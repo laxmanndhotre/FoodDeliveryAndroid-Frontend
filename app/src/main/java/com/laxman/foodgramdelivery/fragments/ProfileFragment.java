@@ -108,6 +108,24 @@ public class ProfileFragment extends Fragment {
         fetchProfile();
         fetchEarnings();
 
+        fetchEarnings();
+
+        androidx.core.widget.NestedScrollView nsv = view.findViewById(R.id.nsvProfile);
+        if (nsv != null) {
+            nsv.setOnScrollChangeListener((androidx.core.widget.NestedScrollView.OnScrollChangeListener) (v, scrollX,
+                    scrollY, oldScrollX, oldScrollY) -> {
+                if (getActivity() instanceof com.laxman.foodgramdelivery.HomeActivity) {
+                    com.laxman.foodgramdelivery.HomeActivity activity = (com.laxman.foodgramdelivery.HomeActivity) getActivity();
+                    int dy = scrollY - oldScrollY;
+                    if (dy > 20) {
+                        activity.collapseBottomNav();
+                    } else if (dy < -20) {
+                        activity.expandBottomNav();
+                    }
+                }
+            });
+        }
+
         return view;
     }
 
