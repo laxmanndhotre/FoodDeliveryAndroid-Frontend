@@ -1,3 +1,8 @@
+# Express backend: https://github.com/amlaxmann/foodgram-express
+# React Native App for Restaurant repo: https://github.com/ansar-shikalgar/restaurant-frontend
+# React Native App for User repo: https://github.com/Govind2302/foodgram_user
+# Spring boot Server: https://github.com/laxmanndhotre/FoodDeliveryAndroid-Frontend
+
 # Android App Summary: FoodGram Delivery
 
 ## Overview
