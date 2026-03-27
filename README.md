@@ -5,6 +5,7 @@
 ## React Native App for Restaurant repo: https://github.com/ansar-shikalgar/restaurant-frontend
 ## React Native App for User repo: https://github.com/Govind2302/foodgram_user
 ## Spring boot Server: https://github.com/laxmanndhotre/FoodDeliveryAndroid-Frontend
+## React Web Frontend: https://github.com/Govind2302/Foodgram_admin_client
 
 ## Overview
 **FoodGram Delivery** is an Android application designed for delivery personnel to manage orders, track earnings, and maintain their profile. It is built using **Java** and follows a standard architecture with fragments for main screens.
